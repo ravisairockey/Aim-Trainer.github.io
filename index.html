@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click the Box</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            cursor: none; /* Hide cursor */
+        }
+
+        #gameArea {
+            width: 500px;
+            height: 500px;
+            background-color: rgb(30, 30, 30);
+            position: relative;
+            border: 2px solid #fff;
+            margin-bottom: 20px;
+        }
+
+        #box {
+            width: 50px;
+            height: 50px;
+            position: absolute;
+            background-color: azure;
+            border-radius: 50%; /* Make the box circular */
+            transition: box-shadow 0.3s; /* Smooth transition for shadow */
+        }
+
+        #box:hover {
+            box-shadow: 0 0 15px rgba(140, 243, 255, 1); /* Light blue glow effect */
+        }
+
+        #stats {
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: #3a3a3a;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #575757;
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        p {
+            margin: 5px;
+        }
+
+        #watermark {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+        }
+
+        #modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(50, 50, 50, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 10;
+        }
+
+        #leaderboard {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            background-color: rgba(50, 50, 50, 0.8);
+            padding: 10px;
+            border-radius: 5px;
+            width: 200px;
+            color: white;
+        }
+
+        #leaderboard h3 {
+            margin: 0;
+        }
+
+        .highlight {
+            color: gold;
+            font-weight: bold;
+        }
+
+        .fade {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .circle {
+            height: 24px;
+            width: 24px;
+            border-radius: 12px;
+            position: fixed; 
+            top: 0;
+            left: 0;
+            background: linear-gradient(90deg, #ffffff, #e5e5e5, #cbcbcb, #b2b2b2, #9a9a9a, #828282, #6c6c6c, #565656, #404040, #2c2c2c, #1a1a1a, #000000);
+            pointer-events: none;
+            z-index: 99999999; /* Stay on top of all other elements */
+        }
+
+        /* Logo and dialogue box styles */
+        #logoContainer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            
+        }
+
+        #logo {
+            width: 40px; /* Adjust size as needed */
+            height: auto;
+            cursor: none;
+            /* box-shadow: 0 0 15px rgba(128, 0, 128, 1); */
+            transition: box-shadow 0.3s ease;
+        }
+        #logo :hover{
+            box-shadow: 0 0 30px rgb(255, 42, 255); /* Purple glow effect */
+        }
+
+        #dialogueBox {
+            display: flex;
+            position: absolute;
+            top: -50px; /* Adjust position */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(50, 50, 50, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 20;
+        }
+
+        #banner {
+            display: none; /* Initially hidden */
+            position: absolute;
+            bottom: 40px; /* Position above the logo */
+            left: 50%;
+            transform: translateX(-50%); /* Center the banner */
+            background-color: rgba(50, 50, 50, 0.9);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: transform 0.3s ease; /* Smooth transition */
+            transform: translateX(-100%); /* Start off-screen to the left */
+}
+
+        #logoContainer:hover #dialogueBox {
+            display: block; /* Show dialogue box on hover */
+        }
+
+        #logoContainer:hover #banner {
+            display: block; /* Show the banner */
+            transform: translateX(0); /* Slide in */
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Aim Trainer</h1>
+    <div id="gameArea">
+        <div id="box"></div>
+    </div>
+
+    <div id="stats">
+        <p>Score: <span id="score">0</span></p>
+        <p>Misses: <span id="misses">0</span></p>
+        <p>Time Taken: <span id="timeTaken">0</span> seconds</p>
+    </div>
+
+    <div>
+        <button id="startButton">Start</button>
+        <button id="endButton" disabled>End</button>
+    </div>
+
+    <div>
+        <label>
+            <input type="checkbox" id="timeoutCheckbox"> Enable Timeout
+        </label>
+        <label>
+            Difficulty (seconds):
+            <input type="range" id="timeoutSlider" min="1" max="10" value="5">
+            <span id="timeoutValue">5</span> seconds
+        </label>
+    </div>
+
+    <div id="watermark">MADE BY RSV</div>
+
+    <div id="modal">
+        <h2>Congratulations!</h2>
+        <p>You reached a score of 100!</p>
+        <button id="closeModal">Close</button>
+    </div>
+
+    <div id="leaderboard">
+        <h3>Leaderboard</h3>
+        <ul id="leaderboardList"></ul>
+    </div>
+
+    <div id="logoContainer">
+        <a href="https://github.com/ravisairockey" target="_blank">
+            <img id="logo" src="logo.png" alt="Logo">
+        </a>
+        <!-- <div id="dialogueBox">Click me to view my GitHub page</div> -->
+        <!-- <div id="banner">Visit my GitHub</div> Sliding banner -->
+    </div>
+
+    <script>
+        const box = document.getElementById("box");
+        const scoreDisplay = document.getElementById("score");
+        const missesDisplay = document.getElementById("misses");
+        const timeTakenDisplay = document.getElementById("timeTaken");
+        const modal = document.getElementById("modal");
+        const closeModal = document.getElementById("closeModal");
+        const leaderboardList = document.getElementById("leaderboardList");
+        const timeoutCheckbox = document.getElementById("timeoutCheckbox");
+        const timeoutSlider = document.getElementById("timeoutSlider");
+        const timeoutValueDisplay = document.getElementById("timeoutValue");
+
+        let score = 0;
+        let misses = 0;
+        let interval;
+        let startTime;
+        let timeoutDuration = 5000;
+        let gameActive = false;
+        let timeoutId;
+
+        const clickSoundFile = 'click-sound.wav';
+        const errorSoundFile = 'error.wav';
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+        document.getElementById('endButton').addEventListener('click', endGame);
+        closeModal.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        timeoutSlider.addEventListener("input", function() {
+            timeoutValueDisplay.textContent = this.value;
+        });
+
+        function startGame() {
+            score = 0;
+            misses = 0;
+            scoreDisplay.textContent = score;
+            missesDisplay.textContent = misses;
+            box.style.display = 'block';
+            moveBox();
+            startTime = Date.now();
+            interval = setInterval(updateTime, 100);
+            gameActive = true;
+            document.getElementById('startButton').disabled = true;
+            document.getElementById('endButton').disabled = false;
+
+            if (timeoutCheckbox.checked) {
+                timeoutDuration = timeoutSlider.value * 1000;
+                timeoutId = setTimeout(endGame, timeoutDuration);
+            }
+        }
+
+        function endGame() {
+            clearInterval(interval);
+            clearTimeout(timeoutId);
+            box.style.display = 'none';
+            gameActive = false;
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('endButton').disabled = true;
+
+            const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+            updateLeaderboard(score, timeTaken);
+
+            if (score >= 100) {
+                modal.style.display = 'block';
+            } else {
+                alert("Game Over! Your score: " + score);
+            }
+        }
+
+        box.addEventListener("click", function() {
+            if (!gameActive) return;
+            score++;
+            scoreDisplay.textContent = score;
+            scoreDisplay.classList.add("fade"); // Add fade class for animation
+
+            // Check if score is 100
+            if (score >= 100) {
+                endGame(); // End the game immediately
+            } else {
+                // Use setTimeout to remove the class after the animation
+                setTimeout(() => {
+                    scoreDisplay.classList.remove("fade");
+                }, 500); // Match the duration of the CSS transition
+                moveBox();
+                playSound(clickSoundFile);
+            }
+        });
+
+        function moveBox() {
+            const x = Math.floor(Math.random() * (500 - 50));
+            const y = Math.floor(Math.random() * (500 - 50));
+            box.style.left = x + "px";
+            box.style.top = y + "px";
+        }
+
+        document.addEventListener("click", function(event) {
+            const gameArea = document.getElementById("gameArea");
+            if (event.target !== box && gameArea.contains(event.target)) {
+                misses++;
+                missesDisplay.textContent = misses;
+                playSound(errorSoundFile); // Play error sound on miss
+            }
+        });
+
+        function playSound(soundFile) {
+            const sound = new Audio(soundFile);
+            sound.play().catch((error) => {
+                console.error("Error playing sound:", error);
+            });
+        }
+
+        function updateTime() {
+            const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+            timeTakenDisplay.textContent = timeTaken;
+        }
+
+        function updateLeaderboard(score, timeTaken) {
+            const listItem = document.createElement("li");
+            listItem.textContent = `Score: ${score} | Time: ${timeTaken} seconds`;
+            if (score >= 100) {
+                listItem.classList.add("highlight");
+            }
+            leaderboardList.appendChild(listItem);
+        }
+    </script>
+
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+    <div class="circle"></div>
+
+    <script>
+        const coords = { x: 0, y: 0 };
+        const circles = document.querySelectorAll(".circle");
+
+        const colors = [
+            "#ffb56b",
+            "#fdaf69",
+            "#f89d63",
+            "#f59761",
+            "#ef865e",
+            "#ec805d",
+            "#e36e5c",
+            "#df685c",
+            "#d5585c",
+            "#d1525c",
+            "#c5415d",
+            "#c03b5d",
+            "#b22c5e",
+            "#ac265e",
+            "#9c155f",
+            "#950f5f",
+            "#830060",
+            "#7c0060",
+            "#680060",
+            "#60005f",
+            "#48005f",
+            "#3d005e"
+        ];
+
+        circles.forEach(function (circle, index) {
+            circle.x = 0;
+            circle.y = 0;
+            circle.style.backgroundColor = colors[index % colors.length];
+        });
+
+        window.addEventListener("mousemove", function(e){
+            coords.x = e.clientX;
+            coords.y = e.clientY;
+        });
+
+        function animateCircles() {
+            let x = coords.x;
+            let y = coords.y;
+
+            circles.forEach(function (circle, index) {
+                circle.style.left = x - 12 + "px";
+                circle.style.top = y - 12 + "px";
+
+                circle.style.scale = (circles.length - index) / circles.length;
+
+                circle.x = x;
+                circle.y = y;
+
+                const nextCircle = circles[index + 1] || circles[0];
+                x += (nextCircle.x - x) * 0.3;
+                y += (nextCircle.y - y) * 0.3;
+            });
+ 
+            requestAnimationFrame(animateCircles);
+        }
+
+        animateCircles();
+    </script>
+</body>
+</html>
